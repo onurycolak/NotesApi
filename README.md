@@ -1,60 +1,113 @@
-# notes-api
+# Notes API – Quarkus Bootcamp Project
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A simple, production-style Notes API built with Java, Quarkus, and Maven.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+---
 
-## Running the application in dev mode
+## Features
 
-You can run your application in dev mode that enables live coding using:
-```shell script
-./mvnw compile quarkus:dev
+- CRUD operations for notes (Create, Read, Update, Delete)
+- Pagination, sorting, and filtering support
+- Enum support for urgency (`LOW`, `MEDIUM`, `HIGH`)
+- Input validation and error handling with JSON responses
+- API documentation via Swagger/OpenAPI (`/q/swagger-ui`)
+- Ready-to-run with in-memory H2 database (test/dev)
+
+---
+
+## Tech Stack
+
+- Java 17
+- [Quarkus](https://quarkus.io/) (JAX-RS, Hibernate ORM)
+- H2 Database (in-memory, dev/test)
+- Maven
+- [OpenAPI/Swagger UI](https://quarkus.io/guides/openapi-swaggerui) (auto-generated docs)
+- JUnit & RestAssured for integration tests
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 17+
+- Maven 3.8+
+
+### Running Locally
+
+```sh
+git clone https://github.com/your-username/notes-api.git
+cd notes-api
+./mvnw quarkus:dev
+```
+The API will be available at [http://localhost:8081/notes](http://localhost:8081/notes).
+
+---
+
+## API Documentation
+
+Once the app is running, see the full API docs and interact with the endpoints at:  
+[http://localhost:8081/q/swagger-ui](http://localhost:8081/q/swagger-ui)
+
+---
+
+## Running Tests
+
+```sh
+./mvnw test
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+---
 
-## Packaging and running the application
+## Example API Usage
 
-The application can be packaged using:
-```shell script
-./mvnw package
-```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Create a Note
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
+```sh
+curl -X POST "http://localhost:8081/notes" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "First note", "content": "Hello world!", "urgency": "HIGH"}'
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+### List Notes
 
-## Creating a native executable
-
-You can create a native executable using: 
-```shell script
-./mvnw package -Dnative
+```sh
+curl "http://localhost:8081/notes?page=1&size=5"
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+### Get Note By ID
+
+```sh
+curl "http://localhost:8081/notes/1"
 ```
 
-You can then execute your native executable with: `./target/notes-api-1.0.0-SNAPSHOT-runner`
+### Update a Note
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+```sh
+curl -X PUT "http://localhost:8081/notes/1" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Updated title", "content": "Updated content", "urgency": "MEDIUM"}'
+```
 
-## Related Guides
+### Delete a Note
 
-- RESTEasy Reactive ([guide](https://quarkus.io/guides/resteasy-reactive)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
+```sh
+curl -X DELETE "http://localhost:8081/notes/1"
+```
 
-## Provided Code
+---
 
-### RESTEasy Reactive
+## Project Structure
 
-Easily start your Reactive RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+```
+notes-api/
+  ├── src/
+  │   ├── main/
+  │   │   ├── java/com/onur/bootcamp/      # Main Java code (resources, services, models)
+  │   │   └── resources/application.properties  # App configuration (ports, db, etc.)
+  │   └── test/java/com/onur/bootcamp/     # Integration tests
+  ├── .gitignore
+  ├── mvnw / mvnw.cmd
+  ├── pom.xml
+  └── README.md
+```
