@@ -3,11 +3,13 @@ package com.onur.bootcamp;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Entity
 public class Note {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(hidden = true)
     private Integer id;
 
     @NotBlank(message = "Content cannot be blank")
@@ -18,6 +20,7 @@ public class Note {
     @Size(max = 50, message = "Title must not exceed 50 characters")
     private String title;
 
+    @Enumerated(EnumType.ORDINAL)
     private Urgency urgency;
 
     public Note() {} // Quarkus needs a no-arg constructor

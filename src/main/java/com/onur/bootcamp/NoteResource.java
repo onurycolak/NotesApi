@@ -11,12 +11,13 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
-
 
 
 @Path("/notes")
@@ -30,7 +31,7 @@ public class NoteResource {
             summary = "List notes",
             description = "Returns paginated, sorted, and filtered list of notes."
     )
-    public List<Note> getAllNote(
+    public Response getAllNote(
             @Parameter(
                     description = "Page number (1-based)"
             ) @QueryParam("page") @DefaultValue("1") int page,
@@ -49,7 +50,9 @@ public class NoteResource {
             ) @QueryParam("title") String title
 
     ) {
-        return noteService.getAllNotes(page, size, sort, urgency, title);
+        List<Note> allNotes = noteService.getAllNotes(page, size, sort, urgency, title);
+
+        return Response.ok(allNotes).build();
     }
 
     @GET
@@ -63,16 +66,25 @@ public class NoteResource {
             description = "Note not found",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "NotFound",
+                                    summary = "Note not found",
+                                    value = "{\"error\": \"Note with the given ID not found.\", \"status\": 404}"
+                            )
+                    }
             )
     )
     @Path("/latest")
-    public Note getLatestNote() {
-        if (noteService.getAllNotes().isEmpty()) {
+    public Response getLatestNote() {
+        Note latest = noteService.getLatestNote();
+
+        if (latest == null) {
             throw new WebApplicationException("Note not found", Response.Status.NOT_FOUND);
         }
 
-        return noteService.getLatestNote();
+        return Response.ok(latest).build();
     }
 
     @GET
@@ -86,7 +98,14 @@ public class NoteResource {
             description = "Invalid ID provided.",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "BadRequest",
+                                    summary = "Invalid ID",
+                                    value = "{\"error\": \"Invalid ID provided.\", \"status\": 400}"
+                            )
+                    }
             )
     )
     @APIResponse(
@@ -94,12 +113,19 @@ public class NoteResource {
             description = "Note with the given ID not found.",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "NotFound",
+                                    summary = "Note not found",
+                                    value = "{\"error\": \"Note with the given ID not found.\", \"status\": 404}"
+                            )
+                    }
             )
     )
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Note getNoteWithId(
+    public Response getNoteWithId(
         @Parameter(
             description = "Target note ID"
         ) @PathParam("id") int id
@@ -108,9 +134,9 @@ public class NoteResource {
             throw new WebApplicationException("Id must be greater than 0", Response.Status.BAD_REQUEST);
         }
 
-        Note n = noteService.getNoteById(id);
+        Note note = noteService.getNoteById(id);
 
-        if (n != null) return n;
+        if (note != null) return Response.ok(note).build();
 
         throw new WebApplicationException("Note not found", Response.Status.NOT_FOUND);
     }
@@ -126,7 +152,14 @@ public class NoteResource {
             description = "Invalid data provided.",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "BadRequest",
+                                    summary = "Invalid ID",
+                                    value = "{\"error\": \"Invalid ID provided.\", \"status\": 400}"
+                            )
+                    }
             )
     )
     @APIResponse(
@@ -134,13 +167,26 @@ public class NoteResource {
             description = "Note not found.",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "NotFound",
+                                    summary = "Note not found",
+                                    value = "{\"error\": \"Note with the given ID not found.\", \"status\": 404}"
+                            )
+                    }
             )
+    )
+    @Parameter(
+            description = "API key for authentication",
+            in = ParameterIn.HEADER,
+            required = true,
+            name = "X-API-Key"
     )
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Note updateNote(
+    public Response updateNote(
         @Parameter(
             description = "Target note ID"
         ) @PathParam("id") int id,
@@ -162,7 +208,7 @@ public class NoteResource {
         if (updated == null) {
             throw new WebApplicationException("Note not found", 404);
         }
-        return updated;
+        return Response.ok(updated).build();
     }
 
     @POST
@@ -176,8 +222,21 @@ public class NoteResource {
         description = "Invalid note",
         content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)
+                schema = @Schema(implementation = ErrorResponse.class),
+                examples = {
+                        @ExampleObject(
+                                name = "BadRequest",
+                                summary = "Invalid note.",
+                                value = "{\"error\": \"Invalid note.\", \"status\": 400}"
+                        )
+                }
         )
+    )
+    @Parameter(
+            description = "API key for authentication",
+            in = ParameterIn.HEADER,
+            required = true,
+            name = "X-API-Key"
     )
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -210,7 +269,14 @@ public class NoteResource {
         description = "Invalid ID provided.",
         content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)
+                schema = @Schema(implementation = ErrorResponse.class),
+                examples = {
+                        @ExampleObject(
+                                name = "BadRequest",
+                                summary = "Invalid ID",
+                                value = "{\"error\": \"Invalid ID provided.\", \"status\": 400}"
+                        )
+                }
         )
     )
     @APIResponse(
@@ -218,22 +284,35 @@ public class NoteResource {
         description = "Note with the given ID not found.",
         content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)
+                schema = @Schema(implementation = ErrorResponse.class),
+                examples = {
+                        @ExampleObject(
+                                name = "NotFound",
+                                summary = "Note not found",
+                                value = "{\"error\": \"Note with the given ID not found.\", \"status\": 404}"
+                        )
+                }
         )
+    )
+    @Parameter(
+            description = "API key for authentication",
+            in = ParameterIn.HEADER,
+            required = true,
+            name = "X-API-Key"
     )
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteNoteById(
-            @Parameter(
-                    description = "Target note ID"
-            )
-            @PathParam("id") int id
+        @Parameter(
+                description = "Target note ID"
+        )
+        @PathParam("id") int id
     ) {
-        boolean deleted = noteService.deleteNoteById(id);
-
         if (id <= 0) {
             throw new WebApplicationException("Id must be greater than 0", Response.Status.BAD_REQUEST);
         }
+
+        boolean deleted = noteService.deleteNoteById(id);
 
         if (deleted) {
             return Response.noContent().build(); // 204 No Content, common for deletes

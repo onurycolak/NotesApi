@@ -8,7 +8,7 @@ public class NoteUpdateRequest {
 
     public NoteUpdateRequest() {} // Quarkus needs a no-arg constructor
 
-    public NoteUpdateRequest(Integer id, String content, String title, Urgency urgency) {
+    public NoteUpdateRequest(String content, String title, Urgency urgency) {
         this.content = content;
         this.title = title;
         this.urgency = urgency;

@@ -1,13 +1,11 @@
 package com.onur.bootcamp;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
@@ -16,11 +14,8 @@ public class NoteService {
     @Inject
     EntityManager em;
 
-    private final List<Note> notes = new ArrayList<>();
-    //private int nextId = 1;
-
     public List<Note> getAllNotes() {
-        return getAllNotes(1, 10, "urgency,desc", Urgency.LOW, null);
+        return getAllNotes(1, 10, "urgency,desc", null, null);
     }
 
     public List<Note> getAllNotes(int page, int size, String sort, Urgency urgency, String title) {
@@ -38,7 +33,6 @@ public class NoteService {
             jpql += " AND n.urgency = :urgency";
         }
 
-        // Sanitize inputs (accept only allowed fields/orders for safety)
         if (!sortField.matches("id|title|urgency|content")) sortField = "urgency";
         if (!sortOrder.matches("ASC|DESC")) sortOrder = "DESC";
 
@@ -66,24 +60,17 @@ public class NoteService {
     }
 
     public Note getNoteById(int id) {
-        /*return notes.stream()
-                .filter(note -> note.getId() == id)
-                .findAny()
-                .orElse(null);*/
         return em.find(Note.class, id);
     }
 
     @Transactional
-    public Note createNote(Note note) {
-        /*note.setId(nextId++);
-        notes.add(note);*/
+    public void createNote(Note note) {
         if (note.getUrgency() == null) {
             note.setUrgency(Urgency.LOW);
         }
 
         em.persist(note);
 
-        return note;
     }
 
     @Transactional
@@ -93,9 +80,6 @@ public class NoteService {
         if (incoming.getContent() != null) n.setContent(incoming.getContent());
         if (incoming.getTitle() != null) n.setTitle(incoming.getTitle());
         if (incoming.getUrgency() != null) n.setUrgency(incoming.getUrgency());
-        // No need to call em.persist() or em.merge() for managed entities
-
-        // When the transaction ends (method returns), JPA automatically saves the change!
 
         return n;
     }
@@ -108,13 +92,9 @@ public class NoteService {
             return true;
         }
         return false;
-        //return notes.removeIf(note -> note.getId() == id);
     }
 
     public Note getLatestNote() {
-        /*if (notes.isEmpty()) return null;
-        return notes.get(notes.size() - 1);*/
-
         List<Note> notes = em.createQuery("SELECT n FROM Note n ORDER BY n.id DESC", Note.class)
                 .setMaxResults(1)
                 .getResultList();

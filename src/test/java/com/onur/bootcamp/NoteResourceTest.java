@@ -4,6 +4,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,11 +25,16 @@ public class NoteResourceTest {
         em.createQuery("DELETE FROM Note").executeUpdate();
     }
 
+    @Inject
+    @ConfigProperty(name = "app.api-key")
+    String API_KEY;
+
     // --- POST Tests ---
 
     @Test
     public void testPostNote_Success() {
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"foo content\",\"title\":\"foo title\"}")
                 .when().post("/notes")
@@ -41,6 +47,7 @@ public class NoteResourceTest {
     @Test
     public void testPostNote_BlankContent() {
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"\"}")
                 .when().post("/notes")
@@ -52,6 +59,7 @@ public class NoteResourceTest {
     public void testPostNote_InvalidInputs() {
         // Bad urgency string
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"alpha\",\"title\":\"bravo\",\"urgency\":\"INVALID\"}")
                 .when().post("/notes")
@@ -60,6 +68,7 @@ public class NoteResourceTest {
 
         // Missing content
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"bravo\",\"urgency\":\"LOW\"}")
                 .when().post("/notes")
@@ -68,6 +77,7 @@ public class NoteResourceTest {
 
         // Missing title
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"alpha\",\"urgency\":\"LOW\"}")
                 .when().post("/notes")
@@ -78,11 +88,12 @@ public class NoteResourceTest {
     // --- GET Tests ---
 
     @Test
-    public void testGetAllNotes() {
+    public void testGetAllNote() {
         given()
-            .contentType("application/json")
-            .body("{\"content\":\"foo bar\",\"title\":\"foo bar\"}")
-            .when().post("/notes").then().statusCode(201);
+                .header("X-API-Key", API_KEY)
+                .contentType("application/json")
+                .body("{\"content\":\"foo bar\",\"title\":\"foo bar\"}")
+                .when().post("/notes").then().statusCode(201);
 
         given()
                 .when().get("/notes")
@@ -94,6 +105,7 @@ public class NoteResourceTest {
     @Test
     public void testGetNotes_WithFilter() {
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"lorem ipsum\",\"title\":\"lorem ipsum\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes")
@@ -111,6 +123,7 @@ public class NoteResourceTest {
     @Test
     public void testGetNotes_WithSizeLimit() {
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"gamma\",\"title\":\"gamma\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes")
@@ -118,6 +131,7 @@ public class NoteResourceTest {
                 .statusCode(201);
 
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"delta\",\"title\":\"delta\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes")
@@ -134,6 +148,7 @@ public class NoteResourceTest {
     @Test
     public void testGetNotes_Pagination() {
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"apple\",\"title\":\"apple\",\"urgency\":\"LOW\"}")
                 .when().post("/notes")
@@ -141,6 +156,7 @@ public class NoteResourceTest {
                 .statusCode(201);
 
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"content\":\"banana\",\"title\":\"banana\",\"urgency\":\"LOW\"}")
                 .when().post("/notes")
@@ -176,13 +192,13 @@ public class NoteResourceTest {
     @Test
     public void testGetNotes_Sorting() {
         // Use alphabetically clear values
-        given().contentType("application/json")
+        given().header("X-API-Key", API_KEY).contentType("application/json")
                 .body("{\"content\":\"alpha\",\"title\":\"alpha\",\"urgency\":\"LOW\"}")
                 .when().post("/notes").then().statusCode(201);
-        given().contentType("application/json")
+        given().header("X-API-Key", API_KEY).contentType("application/json")
                 .body("{\"content\":\"omega\",\"title\":\"omega\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes").then().statusCode(201);
-        given().contentType("application/json")
+        given().header("X-API-Key", API_KEY).contentType("application/json")
                 .body("{\"content\":\"gamma\",\"title\":\"gamma\",\"urgency\":\"MEDIUM\"}")
                 .when().post("/notes").then().statusCode(201);
 
@@ -211,7 +227,6 @@ public class NoteResourceTest {
                 .body("content", hasItem("alpha"));
         given().when().get("/notes?sort=content,desc&size=1")
                 .then().statusCode(200)
-                .body("size()", greaterThanOrEqualTo(1))
                 .body("content", hasItem("omega"));
     }
 
@@ -220,6 +235,7 @@ public class NoteResourceTest {
     @Test
     public void testPutNote_UpdateContentAndTitle() {
         int noteId = given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"pre-update\",\"content\":\"pre-update\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes")
@@ -229,6 +245,7 @@ public class NoteResourceTest {
                 .body().jsonPath().getInt("id");
 
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"updated title\",\"content\":\"updated content\"}")
                 .when().put("/notes/" + noteId)
@@ -245,6 +262,7 @@ public class NoteResourceTest {
     @Test
     public void testPutNote_UpdateUrgency() {
         int noteId = given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"update urgency\",\"content\":\"update urgency\",\"urgency\":\"MEDIUM\"}")
                 .when().post("/notes")
@@ -254,6 +272,7 @@ public class NoteResourceTest {
                 .body().jsonPath().getInt("id");
 
         given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"urgency\":\"LOW\"}")
                 .when().put("/notes/" + noteId)
@@ -268,6 +287,7 @@ public class NoteResourceTest {
     @Test
     public void testPutNote_EmptyFieldsAndInvalidInputs() {
         int noteId = given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"bad input test\",\"content\":\"bad input test\",\"urgency\":\"LOW\"}")
                 .when().post("/notes")
@@ -277,25 +297,26 @@ public class NoteResourceTest {
                 .body().jsonPath().getInt("id");
 
         // Empty urgency
-        given().contentType("application/json").body("{\"urgency\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"urgency\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
 
         // Invalid urgency
-        given().contentType("application/json").body("{\"urgency\":\"INVALID\"}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"urgency\":\"INVALID\"}").when().put("/notes/" + noteId).then().statusCode(400);
 
         // Integer urgency
-        given().contentType("application/json").body("{\"urgency\":1}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"urgency\":1}").when().put("/notes/" + noteId).then().statusCode(400);
 
         // Empty title/content
-        given().contentType("application/json").body("{\"title\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
-        given().contentType("application/json").body("{\"content\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
-        given().contentType("application/json").body("{\"title\":\"\",\"content\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"title\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"content\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"title\":\"\",\"content\":\"\"}").when().put("/notes/" + noteId).then().statusCode(400);
         // Empty payload
-        given().contentType("application/json").body("{}").when().put("/notes/" + noteId).then().statusCode(400);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{}").when().put("/notes/" + noteId).then().statusCode(400);
     }
 
     @Test
     public void testPutNote_NonExistentIdAndUnknownFields() {
         int noteId = given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"nonexistent test\",\"content\":\"nonexistent test\",\"urgency\":\"HIGH\"}")
                 .when().post("/notes")
@@ -305,14 +326,14 @@ public class NoteResourceTest {
                 .body().jsonPath().getInt("id");
 
         // Non-existent ID
-        given().contentType("application/json").body("{\"title\":\"foo\"}").when().put("/notes/99999999").then().statusCode(404);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"title\":\"foo\"}").when().put("/notes/99999999").then().statusCode(404);
 
         // Unknown field "foo" should be ignored, "title" should update
-        given().contentType("application/json").body("{\"title\":\"final update\",\"foo\":\"bar\"}").when().put("/notes/" + noteId).then().statusCode(200);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"title\":\"final update\",\"foo\":\"bar\"}").when().put("/notes/" + noteId).then().statusCode(200);
         given().when().get("/notes/" + noteId).then().statusCode(200).body("title", equalTo("final update")).body("$", not(hasKey("foo")));
 
         // Immutable id field in body is ignored
-        given().contentType("application/json").body("{\"id\":123456,\"title\":\"should work\"}").when().put("/notes/" + noteId).then().statusCode(200);
+        given().header("X-API-Key", API_KEY).contentType("application/json").body("{\"id\":123456,\"title\":\"should work\"}").when().put("/notes/" + noteId).then().statusCode(200);
         given().when().get("/notes/" + noteId).then().statusCode(200).body("id", equalTo(noteId));
     }
 
@@ -322,6 +343,7 @@ public class NoteResourceTest {
     public void testDeleteNote() {
         String uniqueTitle = "delete me " + System.currentTimeMillis();
         int noteId = given()
+                .header("X-API-Key", API_KEY)
                 .contentType("application/json")
                 .body("{\"title\":\"" + uniqueTitle + "\",\"content\":\"delete content\"}")
                 .when().post("/notes")
@@ -330,10 +352,10 @@ public class NoteResourceTest {
                 .extract()
                 .body().jsonPath().getInt("id");
 
-        given().when().delete("/notes/" + noteId).then().statusCode(204);
+        given().header("X-API-Key", API_KEY).when().delete("/notes/" + noteId).then().statusCode(204);
         given().when().get("/notes/" + noteId).then().statusCode(404);
-        given().when().delete("/notes/" + noteId).then().statusCode(404);
-        given().when().delete("/notes/987654321").then().statusCode(404);
+        given().header("X-API-Key", API_KEY).when().delete("/notes/" + noteId).then().statusCode(404);
+        given().header("X-API-Key", API_KEY).when().delete("/notes/987654321").then().statusCode(404);
 
         // Should not see deleted note in the list
         given().when().get("/notes?size=10000")
